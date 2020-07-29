@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>*dev_update_window ('off')</l>
+<c></c>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/5.jpeg')</l>
+<l>get_image_size (Image, Width, Height)</l>
+<l>dev_open_window (0, 0, Width, Height, 'black', WindowHandle)</l>
+<l>dev_display (Image)</l>
+<c></c>
+<l>median_image (Image, ImageMedian, 'circle', 1, 'mirrored')</l>
+<c></c>
+<c></c>
+<c>*OTSU算法</c>
+<c>*最大方差</c>
+<l>MaxVariance := 0.0</l>
+<c></c>
+<c>*最佳分割阈值从1到255遍历</c>
+<l>for T:=1 to 255 by 1</l>
+<c>    *区域分割</c>
+<l>    threshold (ImageMedian, Region, T, 255)</l>
+<c>    *获取前景区域像素个数</c>
+<l>    area_center (Region, Area, Row, Column)</l>
+<c>    *获取前景区域均值和方差</c>
+<l>    intensity (Region, ImageMedian, Mean, Deviation)</l>
+<c>    *获取背景区域像素个数、均值和方差</c>
+<l>    complement (Region, RegionComplement)</l>
+<l>    area_center (RegionComplement, Area1, Row1, Column1)</l>
+<l>    intensity (RegionComplement, ImageMedian, Mean1, Deviation1)</l>
+<c>    *计算类间方差</c>
+<l>    otsu := Area*1.0/(Width*Height) * Area1*1.0/(Width*Height) * pow(Mean - Mean1, 2)</l>
+<c>    *得到最大类间方差的最佳阈值</c>
+<l>    if(otsu &gt; MaxVariance)</l>
+<l>        MaxVariance := otsu</l>
+<l>        BestT := T</l>
+<l>    endif</l>
+<l>endfor</l>
+<c></c>
+<c>**OTSU算法Halcon算子</c>
+<l>binary_threshold (ImageMedian, Region2, 'max_separability', 'light', UsedThreshold)</l>
+<c></c>
+<l>threshold (ImageMedian, Region1, BestT, 255)</l>
+<l>dev_display (Image)</l>
+<l>dev_display (Region1)</l>
+<l>stop()</l>
+<l>dev_display (Image)</l>
+<l>dev_display (Region2)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

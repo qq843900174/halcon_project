@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>dev_update_window ('off')</l>
+<l>dev_open_window (0, 0, 832, 768, 'black', WindowHandle)</l>
+<c></c>
+<l>for pictrue_count:=171 to 200 by 1</l>
+<l>*    stop()</l>
+<l>*   read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/'+pictrue_count)</l>
+<l>* read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/7Holes/'+pictrue_count)</l>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_XinWei/'+pictrue_count)</l>
+<c></c>
+<l>fast_threshold (Image, Region, 120, 255, 20)</l>
+<c></c>
+<l>boundary (Region, RegionBorder, 'inner')</l>
+<c></c>
+<l>dilation_circle (RegionBorder, RegionDilation, 5)</l>
+<l>reduce_domain (Image, RegionDilation, ImageReduced)</l>
+<c></c>
+<l>edges_sub_pix (ImageReduced, Edges1, 'canny', 0.5, 20, 60)</l>
+<l>segment_contours_xld (Edges1, ContoursSplit, 'lines_circles', 5, 4, 2)</l>
+<c></c>
+<l>* dev_display (Image)</l>
+<l>* dev_set_draw ('margin')</l>
+<l>* dev_set_color ('red')</l>
+<c></c>
+<c>*第一个铁片的参数</c>
+<l>Row_center1 := []</l>
+<l>Column_center1 := []</l>
+<l>Radius_center1 := []</l>
+<l>count1 := 0</l>
+<c></c>
+<c>*第二个铁片的参数</c>
+<l>Row_center2 := []</l>
+<l>Column_center2 := []</l>
+<l>Radius_center2 := []</l>
+<l>count2 := 0</l>
+<c></c>
+<l>Row := 0</l>
+<l>Column := 0</l>
+<l>pre_Row := 0</l>
+<l>pre_Cloumn := 0</l>
+<c>*上一个圆检测的编号</c>
+<l>label := 1</l>
+<c></c>
+<c></c>
+<l>count_obj (ContoursSplit, Number)</l>
+<l>for i:=1 to Number by 1</l>
+<l>    select_obj (ContoursSplit, ObjectSelected, i)</l>
+<l>    get_contour_global_attrib_xld (ObjectSelected, 'cont_approx', Attrib)</l>
+<l>    if(Attrib &gt; 0)</l>
+<l>        fit_circle_contour_xld (ObjectSelected, 'ahuber', -1, 0, 0, 3, 2, Row, Column, Radius, StartPhi, EndPhi, PointOrder)</l>
+<l>*         gen_circle_contour_xld (ContCircle, Row, Column, Radius, 0, 6.28318, 'positive', 1)</l>
+<l>*         dev_display (ContCircle)</l>
+<l>*         disp_continue_message (WindowHandle, 'black', 'true')</l>
+<l>*         stop()</l>
+<c>        *先判断检测的圆半径是否为铁片的半径</c>
+<l>        if( Radius&gt;112 and Radius&lt;118 )</l>
+<c>            *计算上点圆心和当前圆心的距离是否大于半径，大于20则为第二个铁片,距离小于10则为同一个铁片。</c>
+<c>            *因为第一次检测上点圆心为(0,0)，所以需要第一次检测要设为第一个铁片</c>
+<l>             if( pre_Row==0 and pre_Cloumn==0 )</l>
+<l>                 pre_Row := Row</l>
+<l>                 pre_Cloumn := Column</l>
+<l>                 Row_center1[count1] := Row</l>
+<l>                 Column_center1[count1] := Column</l>
+<l>                 Radius_center1[count1] := Radius</l>
+<l>                 count1 := count1 + 1</l>
+<l>                 label := 1</l>
+<l>                 continue</l>
+<l>             else</l>
+<l>                distance_pp (Row, Column, pre_Row, pre_Cloumn,Distance)</l>
+<l>                pre_Row := Row</l>
+<l>                pre_Cloumn := Column</l>
+<c>                *上一个检测的圆心为第一个铁片</c>
+<l>                if( label == 1 )</l>
+<l>                    if( Distance&lt;10 )</l>
+<l>                        Row_center1[count1] := Row</l>
+<l>                        Column_center1[count1] := Column</l>
+<l>                        Radius_center1[count1] := Radius</l>
+<l>                        count1 := count1 + 1</l>
+<l>                        label := 1</l>
+<l>                    else</l>
+<l>                        Row_center2[count2] := Row</l>
+<l>                        Column_center2[count2] := Column</l>
+<l>                        Radius_center2[count2] := Radius</l>
+<l>                        count2 := count2 + 1</l>
+<l>                        label := 2</l>
+<l>                    endif</l>
+<c>                *上一个检测的圆心为第二个铁片</c>
+<l>                elseif(label == 2)</l>
+<l>                    if( Distance&lt;10 )</l>
+<l>                        Row_center2[count2] := Row</l>
+<l>                        Column_center2[count2] := Column</l>
+<l>                        Radius_center2[count2] := Radius</l>
+<l>                        count2 := count2 + 1</l>
+<l>                        label := 2</l>
+<l>                    else</l>
+<l>                        Row_center1[count1] := Row</l>
+<l>                        Column_center1[count1] := Column</l>
+<l>                        Radius_center1[count1] := Radius</l>
+<l>                        count1 := count1 + 1</l>
+<l>                        label := 1</l>
+<l>                    endif</l>
+<l>                endif</l>
+<l>             endif</l>
+<l>        endif</l>
+<l>    endif</l>
+<l>endfor</l>
+<c></c>
+<c>*判断两铁片中心距离是否大于10，大于10则说明检测到两个铁片物料，图片显示NG。</c>
+<c>*NG变量，NG为0时图片为OK，NG为1是图片为NG</c>
+<l>NG := 0</l>
+<c></c>
+<l>if( Radius_center1&gt;0 and Radius_center2&gt;0 )</l>
+<l>    tuple_mean (Row_center1,Row_center_mean1)</l>
+<l>    tuple_mean (Column_center1,Column_center_mean1)</l>
+<l>    tuple_mean (Row_center2,Row_center_mean2)</l>
+<l>    tuple_mean (Column_center2,Column_center_mean2)</l>
+<l>    distance_pp (Row_center_mean1, Column_center_mean1, Row_center_mean2, Column_center_mean2,Distance_center)</l>
+<l>    if( Distance_center&gt;10.5 )</l>
+<l>        NG := 1</l>
+<l>        dev_display(Image)</l>
+<l>        set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>        set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'This picture is', 'window', 680, 30, 'white', 'false')</l>
+<l>        disp_message (WindowHandle, 'NG', 'window', 680, 225, 'red', 'false')</l>
+<l>        stop()</l>
+<l>        continue</l>
+<l>    endif</l>
+<l>endif</l>
+<c></c>
+<l>*dev_clear_window ()</l>
+<l>* dev_set_colored (12)</l>
+<l>* dev_set_line_width (3)</l>
+<l>* dev_display (Image)</l>
+<l>set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<c></c>
+<c>*把得到的圆心和半径取平均，可减少误差。</c>
+<l> if(Radius_center1 &gt; 0)</l>
+<l>    tuple_mean (Row_center1,Row_center_mean1)</l>
+<l>    tuple_mean (Column_center1,Column_center_mean1)</l>
+<l>    tuple_mean (Radius_center1,Radius_center_mean1)</l>
+<c>    </c>
+<l>*    gen_circle (Circle1, Row_center_mean1, Column_center_mean1, Radius_center_mean1)</l>
+<c>    </c>
+<c>*孔洞数量识别模块</c>
+<l>    gen_circle (Circle1, Row_center_mean1, Column_center_mean1, Radius_center_mean1/2)</l>
+<l>    reduce_domain (Image, Circle1, ImageReduced1)</l>
+<c>    </c>
+<l>    median_image (ImageReduced1, ImageMedian1, 'circle', 3, 'mirrored')</l>
+<l>    mean_image (ImageReduced1, ImageMean, 11, 11)</l>
+<l>    dyn_threshold (ImageReduced1, ImageMean, RegionDynThresh1, 25, 'dark')</l>
+<l>    closing_circle (RegionDynThresh1, RegionClosing, 2)</l>
+<l>    *threshold (ImageReduced1, Region1, 0, 50)</l>
+<l>    *fill_up (Region1, RegionFillUp)</l>
+<c>    </c>
+<c>    </c>
+<l>    connection (RegionClosing, ConnectedRegion1_1)</l>
+<l>    select_shape (ConnectedRegion1_1, SelectedRegion1_1, 'area', 'and', 6.1, 100)</l>
+<l>    union1 (SelectedRegion1_1, RegionUnion1)</l>
+<l>    closing_circle (RegionUnion1, RegionClosing1, 2)</l>
+<l>    fill_up (RegionClosing1, RegionFillUp1)</l>
+<c></c>
+<l>    connection (RegionFillUp1, ConnectedRegion1)</l>
+<l>    select_shape (ConnectedRegion1, SelectedRegion1, ['area', 'circularity'], 'and', [11.3,0.2], [80,1])</l>
+<l>    *select_shape (ConnectedRegion1, SelectedRegion1, 'area', 'and', 11.3, 80)</l>
+<l>    count_obj (SelectedRegion1, Number1)</l>
+<l>*    stop()</l>
+<c>    *若检测到的孔洞数量是19或者7，那么图片检测为OK。</c>
+<l>    if( Number1&lt;=23 and Number1&gt;=7 )</l>
+<c>    *检测中心孔洞</c>
+<c>    *遍历每个孔洞，与拟合圆中心距离最小则为中心孔洞。</c>
+<c>    </c>
+<c>    *最小距离</c>
+<l>    min_Distance := 0</l>
+<c>    *中心孔洞编号</c>
+<l>    hole_number := 0</l>
+<c>    </c>
+<l>    gen_empty_region (RegionUnion_hole)</l>
+<c>    </c>
+<l>        for i:=1 to Number1 by 1</l>
+<l>            select_obj (SelectedRegion1, ObjectSelected1, i)</l>
+<l>            area_center (ObjectSelected1, Area, Row1, Column1)</l>
+<l>            gen_circle (Circle_hole, Row1, Column1, 4)</l>
+<l>            union2 (RegionUnion_hole, Circle_hole, RegionUnion_hole)</l>
+<l>            distance_pp (Row_center_mean1, Column_center_mean1, Row1, Column1, Distance_hole_to_center)</l>
+<l>            if( min_Distance == 0 )</l>
+<l>                min_Distance := Distance_hole_to_center</l>
+<l>            else</l>
+<l>                if( Distance_hole_to_center &lt; min_Distance )</l>
+<l>                    min_Distance := Distance_hole_to_center</l>
+<l>                    hole_number := i</l>
+<l>                endif</l>
+<l>            endif</l>
+<l>        endfor</l>
+<c>        *判断拟合圆圆心与孔洞中心最小距离小于10，则以孔洞中心为铁片中心。</c>
+<l>        if(min_Distance &lt; 10)</l>
+<l>        select_obj (SelectedRegion1, ObjSelected_center, hole_number)</l>
+<l>        area_center (ObjSelected_center, Area_center, Row_center, Column_center)</l>
+<l>        gen_cross_contour_xld (Cross, Row_center, Column_center, 10, 0)</l>
+<l>        gen_circle (Circle_center_hole, Row_center, Column_center, 4)</l>
+<l>        gen_circle (Circle_center, Row_center, Column_center, 115)</l>
+<c></c>
+<l>        *stop()</l>
+<l>        dev_display (Image)</l>
+<l>        dev_set_draw ('margin')</l>
+<l>        dev_set_line_width (1)</l>
+<l>        dev_set_color ('green')</l>
+<l>        dev_display(Circle_center_hole)</l>
+<l>*         dev_display(RegionUnion_hole)</l>
+<l>        dev_set_color ('yellow')</l>
+<l>        dev_display (Cross)</l>
+<l>        dev_set_color ('red')</l>
+<l>*         dev_display(Circle_center_hole)</l>
+<l>        dev_set_line_width (3)        </l>
+<l>        dev_display(Circle_center)</l>
+<l>        disp_message (WindowHandle, 'The center of iron sheet:'+'('+Row_center+','+Column_center+')', 'window', 680, 30, 'black', 'true')</l>
+<c>    *若检测到的孔洞数量不是19或者7，那么图片检测为NG。</c>
+<l>    else</l>
+<l>        NG := 1</l>
+<l>        dev_display(Image)</l>
+<l>        set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>        set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'This picture is', 'window', 680, 30, 'white', 'false')</l>
+<l>        disp_message (WindowHandle, 'NG', 'window', 680, 225, 'red', 'false')</l>
+<l>        stop()</l>
+<l>        continue</l>
+<l>    endif</l>
+<c>     *判断拟合圆圆心与孔洞中心最小距离小于10，则以孔洞中心为铁片中心。</c>
+<l>      else</l>
+<l>          NG := 1</l>
+<l>          dev_display(Image)</l>
+<l>          set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>          disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>          set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
+<l>          disp_message (WindowHandle, 'This picture is', 'window', 680, 30, 'white', 'false')</l>
+<l>          disp_message (WindowHandle, 'NG', 'window', 680, 225, 'red', 'false')</l>
+<l>          stop()</l>
+<l>          continue</l>
+<l>      endif</l>
+<c>        </c>
+<l>else</l>
+<c>    *检测不到铁片目标时显示NG。</c>
+<l>    NG := 1</l>
+<l>    dev_display(Image)</l>
+<l>    set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>    disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>    set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
+<l>    disp_message (WindowHandle, 'This picture is', 'window', 680, 30, 'white', 'false')</l>
+<l>    disp_message (WindowHandle, 'NG', 'window', 680, 225, 'red', 'false')</l>
+<l>    stop()</l>
+<l>    continue</l>
+<l>endif</l>
+<c></c>
+<l>disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>endfor</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

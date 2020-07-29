@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/手机闪光灯罩/1.png')</l>
+<l>get_image_size (Image, Width, Height)</l>
+<l>dev_open_window (0, 0, Width, Height, 'black', WindowHandle)</l>
+<l>rgb1_to_gray (Image, GrayImage)</l>
+<l>dev_display (GrayImage)</l>
+<c></c>
+<l>gen_rectangle1 (ROI_0, 54.5688, 172.5, 697.371, 690.5)</l>
+<l>reduce_domain (GrayImage, ROI_0, ImageReduced)</l>
+<l>threshold (ImageReduced, Regions, 130, 255)</l>
+<l>connection (Regions, ConnectedRegions)</l>
+<l>select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 40332.5, 100000)</l>
+<l>fill_up (SelectedRegions, RegionFillUp)</l>
+<l>dilation_circle (RegionFillUp, RegionDilation, 5)</l>
+<l>erosion_circle (RegionDilation, RegionErosion, 20)</l>
+<l>difference (RegionDilation, RegionErosion, RegionDifference)</l>
+<l>reduce_domain (ImageReduced, RegionDifference, ImageReduced1)</l>
+<l>emphasize (ImageReduced1, ImageEmphasize, Width, Height, 1)</l>
+<l>* dev_clear_window ()</l>
+<l>* dev_display (ImageEmphasize)</l>
+<l>* stop()</l>
+<l>edges_sub_pix (ImageEmphasize, Edges, 'canny', 1, 50, 80)</l>
+<l>select_shape_xld (Edges, SelectedXLD, 'area', 'and', 150, 99999)</l>
+<c>*选出直线边</c>
+<l>segment_contours_xld (SelectedXLD, ContoursSplitL, 'lines', 5, 4, 2)</l>
+<l>union_collinear_contours_xld (ContoursSplitL, UnionContoursL, 10, 1, 8, 0.4, 'attr_keep')</l>
+<l>select_contours_xld (UnionContoursL, SelectedContoursL, 'contour_length', 100, 300, -0.5, 0.5)</l>
+<c>*选出圆弧</c>
+<l>segment_contours_xld (SelectedXLD, ContoursSplitC, 'lines_circles', 5, 4, 2)</l>
+<l>union_collinear_contours_xld (ContoursSplitC, UnionContoursC, 10, 1, 8, 0.4, 'attr_keep')</l>
+<l>select_shape_xld (UnionContoursC, SelectedXLDC, 'ratio', 'and', 0, 1)</l>
+<l>stop()</l>
+<c></c>
+<c>*方法一:合并直线边和圆弧，用最小外接矩形求出中心和角度。</c>
+<l>concat_obj (SelectedContoursL, SelectedXLDC, ObjectsConcat)</l>
+<l>union_adjacent_contours_xld (ObjectsConcat, UnionContours, 10, 1, 'attr_keep')</l>
+<l>close_contours_xld (UnionContours, ClosedContours)</l>
+<l>select_shape_xld (ClosedContours, SelectedXLD1, 'area', 'and', 60000, 100000)</l>
+<c>*直接用最小外接矩形计算不能贴边</c>
+<l>* smallest_rectangle2_xld (SelectedXLD1, Row1, Column1, Phi1, Length11, Length21)</l>
+<l>* gen_rectangle2_contour_xld (Rectangle1, Row1, Column1, Phi1, Length11, Length21)</l>
+<l>stop()</l>
+<c></c>
+<c>*方法二:用两圆的圆心的中心求而出中心和用两条直边的平均角度来算出角度。</c>
+<l>gen_empty_obj (Lines)</l>
+<l>count_obj (SelectedContoursL, NumberL)</l>
+<l>gen_empty_obj (Circles)</l>
+<l>count_obj (SelectedXLDC, NumberC)</l>
+<c></c>
+<c>*拟合两直边，并算出平均角度。</c>
+<l>dev_clear_window ()</l>
+<l>dev_display (GrayImage)</l>
+<l>fit_line_contour_xld (SelectedContoursL, 'tukey', -1, 0, 5, 2, RowBegin, ColBegin, RowEnd, ColEnd, Nr, Nc, Dist)</l>
+<l>for i := 0 to |RowBegin| - 1 by 1</l>
+<l>    gen_contour_polygon_xld (ContourL, [RowBegin[i],RowEnd[i]], [ColBegin[i],ColEnd[i]])</l>
+<l>    concat_obj (Lines, ContourL, Lines)</l>
+<l>    dev_display (ContourL)</l>
+<l>endfor</l>
+<c>*物料角度</c>
+<l>line_orientation (RowBegin, ColBegin, RowEnd, ColEnd, PhiL)</l>
+<l>tuple_mean (PhiL, PhiL_Mean)</l>
+<l>stop()</l>
+<c></c>
+<c></c>
+<c>*拟合两圆弧，并算出物料中心。</c>
+<l>fit_circle_contour_xld (SelectedXLDC, 'algebraic', -1, 0, 0, 3, 2, Row1, Column1, Radius1, StartPhi1, EndPhi1, PointOrder1)</l>
+<l>for i := 0 to |Row1| - 1 by 1</l>
+<l>    gen_circle_contour_xld (ContCircle, Row1, Column1, Radius1, StartPhi1, EndPhi1, 'negative', 1)</l>
+<l>    concat_obj (Circles, ContCircle, Circles)    </l>
+<l>    dev_display (ContCircle)</l>
+<l>endfor</l>
+<c>*物料中心</c>
+<l>tuple_mean (Row1, RowC_Mean)</l>
+<l>tuple_mean (Column1, ColumnC_Mean1)</l>
+<l>stop()</l>
+<c></c>
+<c>*显示轮廓的最小外接矩形</c>
+<l>concat_obj (Lines, Circles, ObjectsConcat1)</l>
+<l>gen_region_contour_xld (ObjectsConcat1, Region, 'filled')</l>
+<l>union1 (Region, RegionUnion)</l>
+<l>smallest_rectangle2 (RegionUnion, Row, Column, Phi, Length1, Length2)</l>
+<l>gen_rectangle2 (Rectangle, Row, Column, Phi, Length1, Length2)</l>
+<c></c>
+<c>*显示模块</c>
+<l>gen_cross_contour_xld (Cross, Row1, Column1, 20, 0)</l>
+<l>gen_circle_contour_xld (ContCircle1, Row1, Column1, Radius1, 0, 6.28318, 'positive', 1)</l>
+<l>gen_cross_contour_xld (Cross_center, RowC_Mean, ColumnC_Mean1, 20, 0)</l>
+<l>dev_clear_window ()</l>
+<l>dev_display (GrayImage)</l>
+<l>dev_set_color ('green')</l>
+<l>dev_set_draw ('margin')</l>
+<l>dev_display (Rectangle)</l>
+<c></c>
+<l>dev_set_line_width (2)</l>
+<l>dev_set_color ('blue')</l>
+<l>dev_display (Lines)</l>
+<l>dev_display (ContCircle1)</l>
+<c></c>
+<l>dev_set_color ('blue')</l>
+<l>disp_line (WindowHandle, Row1[0], Column1[0], Row1[1], Column1[1])</l>
+<c></c>
+<l>dev_set_color ('yellow')</l>
+<l>dev_display (Cross)</l>
+<l>dev_set_color ('red')</l>
+<l>dev_display (Cross_center)</l>
+<c></c>
+<l>set_display_font (WindowHandle, 16, 'mono', 'true', 'false')</l>
+<l>disp_message (WindowHandle, 'X:'+RowC_Mean, 'window', 40, 20, 'green', 'false')</l>
+<l>disp_message (WindowHandle, 'Y:'+ColumnC_Mean1, 'window', 60, 20, 'green', 'false')</l>
+<l>ANGLE := deg(PhiL_Mean)</l>
+<l>disp_message (WindowHandle, 'ANGLE:' + ANGLE$'3.2f' + '°', 'window', 80, 20, 'green', 'false')</l>
+<l>dump_window_image (Image1, WindowHandle)</l>
+<c></c>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

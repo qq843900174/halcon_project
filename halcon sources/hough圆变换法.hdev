@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>*dev_update_window ('off')</l>
+<c></c>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/5.jpeg')</l>
+<l>get_image_size (Image, Width, Height)</l>
+<l>dev_open_window (0, 0, Width, Height, 'black', WindowHandle)</l>
+<l>dev_display (Image)</l>
+<c></c>
+<l>Row_center := 373</l>
+<l>Column_center := 424</l>
+<l>Radius_inner := 112</l>
+<l>Radius_outer := 118</l>
+<c></c>
+<l>ContoursRow :=[] </l>
+<l>ContoursCol :=[] </l>
+<l>dev_set_draw ('margin') </l>
+<l>dev_set_color ('green') </l>
+<l>gen_circle (Circle_inner, Row_center, Column_center, Radius_inner)</l>
+<l>gen_circle (Circle_outer, Row_center, Column_center, Radius_outer)</l>
+<c></c>
+<l>for I := 0 to 360 by 30 </l>
+<l>    Phi := rad(I) </l>
+<l>    Row := Row_center - 115*sin(Phi) </l>
+<l>    Col := Column_center + 115*cos(Phi) </l>
+<l>    Length1 := (Radius_outer-Radius_inner)/2 </l>
+<l>    Length2 := 10 </l>
+<c>     </c>
+<l>    dev_set_color ('green') </l>
+<l>    gen_rectangle2 (Rectangle1, Row, Col, Phi, Length1, Length2) </l>
+<l>    gen_measure_rectangle2 (Row, Col, Phi, Length1, Length2, Width, Height, 'nearest_neighbor', MeasureHandle) </l>
+<c>     </c>
+<l>    measure_pos (Image, MeasureHandle, 1, 30, 'negative', 'first', RowEdge, ColEdge, Amplitude, Distance) </l>
+<c>     </c>
+<l>    dev_set_color ('red') </l>
+<l>    gen_cross_contour_xld (Cross, RowEdge, ColEdge, 6, Phi) </l>
+<l>    ContoursRow := [ContoursRow, RowEdge] </l>
+<l>    ContoursCol := [ContoursCol, ColEdge] </l>
+<l>endfor </l>
+<l>stop() </l>
+<c></c>
+<l>gen_region_points (Region, ContoursRow, ContoursCol) </l>
+<c></c>
+<l>maxValue:=0 </l>
+<l>maxIndex:=0 </l>
+<l>row:=0 </l>
+<l>col:=0 </l>
+<c> * 此处使用越小的步长，结果越精确，但处理时间会加长 </c>
+<l>for Index := Radius_inner to Radius_outer by 0.5 </l>
+<l>     hough_circle_trans (Region, HoughImage, Index) </l>
+<l>     get_image_size(HoughImage, Width, Height) </l>
+<l>     gen_rectangle1(Rectangle, 0, 0, Height-1, Width-1) </l>
+<l>     min_max_gray (Rectangle, HoughImage, 0, Min, Max, Range) </l>
+<l>     if (Max&gt;maxValue) </l>
+<l>         maxValue:=Max </l>
+<l>         maxIndex:=Index </l>
+<l>         threshold(HoughImage, Region2, Max, Max)         </l>
+<l>         area_center (Region2, Area, Rowi, Columni) </l>
+<l>         row:=Rowi-Index </l>
+<l>         col:=Columni-Index </l>
+<l>         radius:=Index </l>
+<l>     endif </l>
+<l>*       stop() </l>
+<l>endfor </l>
+<c></c>
+<c></c>
+<c>     </c>
+<l>dev_display(Image) </l>
+<l>dev_set_draw ('margin') </l>
+<l>gen_circle(Circle, row, col, radius ) </l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

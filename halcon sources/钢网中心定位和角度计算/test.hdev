@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>for picture_name := 33 to 64 by 1</l>
+<l>    read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/mid/'+picture_name)</l>
+<l>    get_image_size (Image, Width, Height)</l>
+<l>    dev_open_window (0, 0, Width, Height, 'black', WindowHandle)</l>
+<c>    </c>
+<c>    *生成钢网ROI区域</c>
+<l>    threshold (Image, Region, 80, 255)</l>
+<l>    connection (Region, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, ['area','ra'], 'and', [50,150], [99999,160])</l>
+<l>    count_obj (SelectedRegions, Number)</l>
+<l>    if( Number )</l>
+<l>    union1 (SelectedRegions, RegionUnion)</l>
+<l>    dilation_rectangle1 (RegionUnion, RegionDilation, 20, 20)</l>
+<l>    reduce_domain (Image, RegionDilation, ImageReduced)</l>
+<l>    dev_clear_window ()</l>
+<l>    dev_display (ImageReduced)  </l>
+<c>    </c>
+<c>    *边缘提取生成最小外接矩形</c>
+<l>    edges_sub_pix (ImageReduced, Edges, 'canny', 1.7, 15, 100)</l>
+<c>    ************************************************************</c>
+<c>    *方法一：hough直线拟合</c>
+<l>    sobel_dir (ImageReduced, EdgeAmplitude, EdgeDirection, 'sum_abs', 3)</l>
+<l>    threshold (EdgeAmplitude, Region1, 110, 255)</l>
+<l>    reduce_domain (EdgeDirection, Region1, ImageReduced1)</l>
+<l>    hough_lines_dir (ImageReduced1, HoughImage, Lines, 18, 4, 'mean', 3, 25, 5, 5, 'true', Angle, Dist)</l>
+<l>    gen_empty_region (LinesRegion)</l>
+<l>    for i:=0 to 28 by 1</l>
+<l>        if(Angle[i]&lt;0.1 and Angle[i]&gt;-0.1)</l>
+<l>        gen_region_hline (LineHNF, Angle[i], Dist[i])</l>
+<l>        union2(LinesRegion, LineHNF, LinesRegion)</l>
+<l>        endif</l>
+<l>    endfor</l>
+<l>    connection (LinesRegion, ConnectedRegions1)</l>
+<l>    select_shape (ConnectedRegions1, SelectedRegions1, 'area', 'and', 700, 800)</l>
+<c>    </c>
+<l>    dev_display (Image)</l>
+<l>    dev_display (SelectedRegions1)</l>
+<c>    </c>
+<l>     stop()</l>
+<c>    *hough_lines_dir</c>
+<c>    ************************************************************</c>
+<c>    *方法二：最小外接矩形</c>
+<l>    union_adjacent_contours_xld (Edges, UnionContours, 9999, 1, 'attr_keep')</l>
+<l>    select_contours_xld (UnionContours, SelectedContours, 'contour_length', 400, 99999, -0.5, 0.5)</l>
+<l>    smallest_rectangle2_xld (SelectedContours, Row2, Column2, Phi1, Length11, Length21)</l>
+<l>    gen_rectangle2_contour_xld (Rectangle1, Row2, Column2, Phi1, Length11, Length21)</l>
+<l>    dev_clear_window ()</l>
+<l>    dev_display (Edges)</l>
+<l>    *stop()</l>
+<l>    dev_display (Image)</l>
+<l>    dev_display (Rectangle1)</l>
+<l>    stop()</l>
+<l>    else</l>
+<l>        dev_clear_window ()</l>
+<l>        dev_display (Image)</l>
+<l>        disp_message (WindowHandle, 'NG', 'window', 20, 20, 'red', 'true')</l>
+<l>        stop()</l>
+<l>    endif</l>
+<l>endfor</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

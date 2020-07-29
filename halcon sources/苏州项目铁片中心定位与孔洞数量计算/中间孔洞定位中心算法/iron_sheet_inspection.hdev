@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>*dev_update_window ('off')</l>
+<l>dev_open_window (0, 0, 832, 768, 'black', WindowHandle)</l>
+<c></c>
+<c></c>
+<l>for pictrue_count:=132 to 223 by 1</l>
+<l>    *stop()</l>
+<l>    count_seconds (Second1)</l>
+<l>    read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/'+pictrue_count)</l>
+<l>*     read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/7Holes/'+pictrue_count)</l>
+<c></c>
+<l>    *count_seconds (Second1)</l>
+<c></c>
+<l>    median_image (Image, ImageMedian, 'circle', 5, 'mirrored')</l>
+<l>    dyn_threshold (Image, ImageMedian, RegionDynThresh, 20, 'dark')</l>
+<l>    connection (RegionDynThresh, ConnectedRegion)</l>
+<l>    select_shape (ConnectedRegion, SelectedRegions, 'area', 'and', 5,100)</l>
+<l>    union1 (SelectedRegions, RegionUnion)</l>
+<l>    closing_circle (RegionUnion, RegionClosing, 2)</l>
+<l>    fill_up (RegionClosing, RegionFillUp)</l>
+<l>    connection (RegionFillUp, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, ['area', 'circularity'], 'and', [30,0.4], [100,1])</l>
+<l>    count_obj (SelectedRegions, Number)</l>
+<c>**************************************************</c>
+<c>    *19孔铁片</c>
+<l>    if(Number == 19)      </l>
+<l>        select_obj (SelectedRegions, ObjectSelected, 1)</l>
+<l>        copy_obj (SelectedRegions, ObjSelected_1, 1, 1)</l>
+<l>        area_center (ObjSelected_1, Area_1, Row_1, Column_1)</l>
+<l>        copy_obj (SelectedRegions, ObjSelected_10, 10, 1)</l>
+<l>        area_center (ObjSelected_10, Area_10, Row_10, Column_10)</l>
+<l>        distance_pp (Row_1, Column_1, Row_10, Column_10, Distance_10)</l>
+<l>        *stop()</l>
+<l>        if( Distance_10&lt;45 and Distance_10&gt;40 )</l>
+<l>            Row_center := Row_10</l>
+<l>            Column_center := Column_10</l>
+<l>            center_number := 10</l>
+<l>        else</l>
+<l>            copy_obj (SelectedRegions, ObjSelected_9, 9, 1)</l>
+<l>            area_center (ObjSelected_9, Area_9, Row_9, Column_9)</l>
+<l>            distance_pp (Row_1, Column_1, Row_9, Column_9, Distance_9)</l>
+<l>            if( Distance_9&lt;45 and Distance_9&gt;40 )</l>
+<l>                Row_center := Row_9</l>
+<l>                Column_center := Column_9</l>
+<l>                center_number := 9</l>
+<l>            else</l>
+<l>                copy_obj (SelectedRegions, ObjSelected_11, 11, 1)</l>
+<l>                area_center (ObjSelected_11, Area_11, Row_11, Column_11)</l>
+<l>                distance_pp (Row_1, Column_1, Row_11, Column_11, Distance_11)</l>
+<l>                if( Distance_11&lt;45 and Distance_11&gt;40 )</l>
+<l>                    Row_center := Row_11</l>
+<l>                    Column_center := Column_11</l>
+<l>                    center_number := 11</l>
+<l>                endif</l>
+<l>            endif</l>
+<l>        endif</l>
+<l>        gen_cross_contour_xld (Cross, Row_center, Column_center, 10, 0)</l>
+<l>        gen_circle (Circle_center, Row_center, Column_center, 5)</l>
+<l>        gen_circle (Circle_sheet, Row_center, Column_center, 116)</l>
+<c>    </c>
+<l>        gen_empty_region (UnionRegion)</l>
+<l>        for i:=1 to Number by 1</l>
+<l>            if(i == center_number )</l>
+<l>                continue</l>
+<l>            else</l>
+<l>            copy_obj (SelectedRegions, ObjSelected, i, 1)</l>
+<l>            area_center (ObjSelected, Area1, Row1, Column1)</l>
+<l>            gen_circle (Circle, Row1, Column1, 5)</l>
+<l>            union2 (UnionRegion, Circle, UnionRegion)</l>
+<l>            endif</l>
+<l>        endfor</l>
+<c>        </c>
+<c>        *显示模块</c>
+<l>        dev_display (Image)</l>
+<l>        set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>        disp_message (WindowHandle, 'The center and hole number of iron sheet:'+'('+Row_center+','+Column_center+')'+' , '+Number, 'window', 680, 30, 'black', 'true')</l>
+<l>        dev_set_draw ('margin')</l>
+<l>        dev_set_line_width (1)</l>
+<l>        dev_set_color ('green')</l>
+<l>        dev_display (UnionRegion)</l>
+<l>        dev_set_color ('yellow')</l>
+<l>        dev_display (Cross)</l>
+<l>        dev_set_color ('red')</l>
+<l>        dev_display (Circle_center)</l>
+<l>        dev_set_line_width (3)</l>
+<l>        dev_display (Circle_sheet)</l>
+<l>        stop()</l>
+<c>**************************************************</c>
+<c>    *7孔铁片</c>
+<l>    elseif(Number == 7)</l>
+<l>        select_obj (SelectedRegions, ObjectSelected, 4)</l>
+<l>        copy_obj (SelectedRegions, ObjSelected_4, 4, 1)</l>
+<l>        area_center (ObjSelected_4, Area_4, Row_4, Column_4)</l>
+<c></c>
+<l>        Row_center := Row_4</l>
+<l>        Column_center := Column_4</l>
+<l>        center_number := 4</l>
+<l>        gen_cross_contour_xld (Cross, Row_center, Column_center, 10, 0)</l>
+<l>        gen_circle (Circle_center, Row_center, Column_center, 5)</l>
+<l>        gen_circle (Circle_sheet, Row_center, Column_center, 116)</l>
+<c>    </c>
+<l>        gen_empty_region (UnionRegion)</l>
+<l>        for i:=1 to Number by 1</l>
+<l>            if(i == center_number )</l>
+<l>                continue</l>
+<l>            else</l>
+<l>            copy_obj (SelectedRegions, ObjSelected, i, 1)</l>
+<l>            area_center (ObjSelected, Area1, Row1, Column1)</l>
+<l>            gen_circle (Circle, Row1, Column1, 5)</l>
+<l>            union2 (UnionRegion, Circle, UnionRegion)</l>
+<l>            endif</l>
+<l>        endfor</l>
+<c>        </c>
+<c>        *显示模块</c>
+<l>        dev_display (Image)</l>
+<l>        set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>        disp_message (WindowHandle, 'The center and hole number of iron sheet:'+'('+Row_center+','+Column_center+')'+' , '+Number, 'window', 680, 30, 'black', 'true')</l>
+<l>        dev_set_draw ('margin')</l>
+<l>        dev_set_line_width (1)</l>
+<l>        dev_set_color ('green')</l>
+<l>        dev_display (UnionRegion)</l>
+<l>        dev_set_color ('yellow')</l>
+<l>        dev_display (Cross)</l>
+<l>        dev_set_color ('red')</l>
+<l>        dev_display (Circle_center)</l>
+<l>        dev_set_line_width (3)</l>
+<l>        dev_display (Circle_sheet)</l>
+<l>        stop()</l>
+<l>    else</l>
+<l>        dev_display(Image)</l>
+<l>        set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>        set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'This picture is', 'window', 680, 30, 'white', 'false')</l>
+<l>        disp_message (WindowHandle, 'NG', 'window', 680, 225, 'red', 'false')</l>
+<l>        stop()</l>
+<l>    endif</l>
+<l>endfor</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>dev_update_window ('off')</l>
+<l>dev_open_window (0, 0, 832, 768, 'black', WindowHandle)</l>
+<c></c>
+<l>for pictrue_count:=1 to 200 by 1</l>
+<l>*   read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/'+pictrue_count)</l>
+<l>* read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/7Holes/'+pictrue_count)</l>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_XinWei/'+pictrue_count)</l>
+<c></c>
+<c>*提取铁片外圈边缘轮廓得到圆的初始中心</c>
+<l>fast_threshold (Image, Region, 120, 255, 20)</l>
+<c></c>
+<l>boundary (Region, RegionBorder, 'inner')</l>
+<c></c>
+<l>dilation_circle (RegionBorder, RegionDilation, 5)</l>
+<l>reduce_domain (Image, RegionDilation, ImageReduced)</l>
+<c></c>
+<l>edges_sub_pix (ImageReduced, Edges1, 'canny', 0.5, 20, 60)</l>
+<l>segment_contours_xld (Edges1, ContoursSplit, 'lines_circles', 5, 4, 2)</l>
+<c></c>
+<c></c>
+<c>*第一个铁片的参数</c>
+<l>Row_center1 := []</l>
+<l>Column_center1 := []</l>
+<l>Radius_center1 := []</l>
+<l>count1 := 0</l>
+<c></c>
+<c>*第二个铁片的参数</c>
+<l>Row_center2 := []</l>
+<l>Column_center2 := []</l>
+<l>Radius_center2 := []</l>
+<l>count2 := 0</l>
+<c></c>
+<l>Row := 0</l>
+<l>Column := 0</l>
+<l>pre_Row := 0</l>
+<l>pre_Cloumn := 0</l>
+<c>*上一个圆检测的编号</c>
+<l>label := 1</l>
+<c></c>
+<c></c>
+<l>count_obj (ContoursSplit, Number)</l>
+<l>for i:=1 to Number by 1</l>
+<l>    select_obj (ContoursSplit, ObjectSelected, i)</l>
+<l>    get_contour_global_attrib_xld (ObjectSelected, 'cont_approx', Attrib)</l>
+<l>    if(Attrib &gt; 0)</l>
+<l>        fit_circle_contour_xld (ObjectSelected, 'ahuber', -1, 0, 0, 3, 2, Row, Column, Radius, StartPhi, EndPhi, PointOrder)</l>
+<l>*         gen_circle_contour_xld (ContCircle, Row, Column, Radius, 0, 6.28318, 'positive', 1)</l>
+<l>*         dev_display (ContCircle)</l>
+<l>*         disp_continue_message (WindowHandle, 'black', 'true')</l>
+<l>*         stop()</l>
+<c>        *先判断检测的圆半径是否为铁片的半径</c>
+<l>        if( Radius&gt;112 and Radius&lt;118 )</l>
+<c>            *计算上点圆心和当前圆心的距离，大于等于10则为第二个铁片,距离小于10则为同一个铁片。</c>
+<c>            *因为第一次检测上点圆心为(0,0)，所以需要第一次检测要设为第一个铁片</c>
+<l>             if( pre_Row==0 and pre_Cloumn==0 )</l>
+<l>                 pre_Row := Row</l>
+<l>                 pre_Cloumn := Column</l>
+<l>                 Row_center1[count1] := Row</l>
+<l>                 Column_center1[count1] := Column</l>
+<l>                 Radius_center1[count1] := Radius</l>
+<l>                 count1 := count1 + 1</l>
+<l>                 label := 1</l>
+<l>                 continue</l>
+<l>             else</l>
+<l>                distance_pp (Row, Column, pre_Row, pre_Cloumn,Distance)</l>
+<l>                pre_Row := Row</l>
+<l>                pre_Cloumn := Column</l>
+<c>                *上一个检测的圆心为第一个铁片</c>
+<l>                if( label == 1 )</l>
+<l>                    if( Distance&lt;10 )</l>
+<l>                        Row_center1[count1] := Row</l>
+<l>                        Column_center1[count1] := Column</l>
+<l>                        Radius_center1[count1] := Radius</l>
+<l>                        count1 := count1 + 1</l>
+<l>                        label := 1</l>
+<l>                    else</l>
+<l>                        Row_center2[count2] := Row</l>
+<l>                        Column_center2[count2] := Column</l>
+<l>                        Radius_center2[count2] := Radius</l>
+<l>                        count2 := count2 + 1</l>
+<l>                        label := 2</l>
+<l>                    endif</l>
+<c>                *上一个检测的圆心为第二个铁片</c>
+<l>                elseif(label == 2)</l>
+<l>                    if( Distance&lt;10 )</l>
+<l>                        Row_center2[count2] := Row</l>
+<l>                        Column_center2[count2] := Column</l>
+<l>                        Radius_center2[count2] := Radius</l>
+<l>                        count2 := count2 + 1</l>
+<l>                        label := 2</l>
+<l>                    else</l>
+<l>                        Row_center1[count1] := Row</l>
+<l>                        Column_center1[count1] := Column</l>
+<l>                        Radius_center1[count1] := Radius</l>
+<l>                        count1 := count1 + 1</l>
+<l>                        label := 1</l>
+<l>                    endif</l>
+<l>                endif</l>
+<l>             endif</l>
+<l>        endif</l>
+<l>    endif</l>
+<l>endfor</l>
+<c></c>
+<c>*判断两铁片中心距离是否大于10，大于10则说明检测到两个铁片物料，图片显示NG。</c>
+<c>*NG变量，NG为0时图片为OK，NG为1是图片为NG</c>
+<l>NG := 0</l>
+<c></c>
+<l>if( Radius_center1&gt;0 and Radius_center2&gt;0 )</l>
+<l>    tuple_mean (Row_center1,Row_center_mean1)</l>
+<l>    tuple_mean (Column_center1,Column_center_mean1)</l>
+<l>    tuple_mean (Row_center2,Row_center_mean2)</l>
+<l>    tuple_mean (Column_center2,Column_center_mean2)</l>
+<l>    distance_pp (Row_center_mean1, Column_center_mean1, Row_center_mean2, Column_center_mean2,Distance_center)</l>
+<l>    if( Distance_center&gt;10.5 )</l>
+<l>        NG := 1</l>
+<l>        dev_display(Image)</l>
+<l>        set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.jpeg', 'window', 30, 30, 'black', 'true')</l>
+<l>        set_display_font (WindowHandle, 20, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'This picture is', 'window', 680, 30, 'white', 'false')</l>
+<l>        disp_message (WindowHandle, 'NG', 'window', 680, 225, 'red', 'false')</l>
+<l>        stop()</l>
+<l>        continue</l>
+<l>    endif</l>
+<l>endif</l>
+<c></c>
+<l>set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<c></c>
+<c>*把得到的圆心和半径取平均，可减少误差。</c>
+<l> if(Radius_center1 &gt; 0)</l>
+<l>    tuple_mean (Row_center1,Row_center_mean1)</l>
+<l>    tuple_mean (Column_center1,Column_center_mean1)</l>
+<l>    tuple_mean (Radius_center1,Radius_center_mean1)</l>
+<c>    </c>
+<l>*    gen_circle (Circle1, Row_center_mean1, Column_center_mean1, Radius_center_mean1)</l>
+<c>    </c>
+<c>*孔洞数量识别模块</c>
+<c>    *生成孔洞ROI区域</c>
+<l>    gen_circle (Circle1, Row_center_mean1, Column_center_mean1, Radius_center_mean1/2)</l>
+<l>    reduce_domain (Image, Circle1, ImageReduced1)</l>
+<c>    </c>
+<c>    *三种方法的图像变量分别是</c>
+<c>    *1.动态阈值风割：SelectedRegions</c>
+<c>    *2.基于颜色的边缘分割：SelectedRegions1</c>
+<c>    *3.基于轮廓的边缘分割：ContoursSplit1</c>
+<c>    </c>
+<c>    *方法一：预处理与动态阈值分割</c>
+<l>    median_image (ImageReduced1, ImageMedian, 'circle', 5, 'mirrored')</l>
+<l>    scale_image (ImageReduced1, ImageScaled1, 1.5, -50)</l>
+<l>    scale_image (ImageMedian, ImageScaled, 1.5, -50)</l>
+<c>    </c>
+<l>    dyn_threshold (ImageScaled1, ImageScaled, RegionDynThresh, 20, 'dark')</l>
+<l>    erosion_circle (RegionDynThresh, RegionErosion, 1)</l>
+<l>    dilation_circle (RegionErosion, RegionDilation1, 1)</l>
+<l>    connection (RegionDilation1, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, ['area','circularity'], 'and', [15, 0.5], [100, 1])</l>
+<l>    dev_display (Image)</l>
+<l>    dev_display (SelectedRegions)</l>
+<l>    disp_message (WindowHandle, '动态阈值分割', 'window', 20, 20, 'red', 'true')</l>
+<l>    stop()</l>
+<c>    </c>
+<c>    *方法二：基于颜色的边缘分割</c>
+<l>    median_image (ImageReduced1, ImageMedian, 'circle', 3, 'mirrored')</l>
+<l>    edges_color (ImageMedian, ImaAmp, ImaDir, 'canny', 1, 'nms', 10, 20)</l>
+<l>    threshold (ImaAmp, Region1, 1, 255)</l>
+<c>    </c>
+<l>    connection (Region1, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 10, 100)</l>
+<l>    union1 (SelectedRegions, RegionUnion)</l>
+<l>    fill_up (RegionUnion, RegionFillUp)</l>
+<l>    erosion_circle (RegionFillUp, RegionErosion, 1)</l>
+<l>    connection (RegionErosion, ConnectedRegions1)</l>
+<l>    select_shape (ConnectedRegions1, SelectedRegions1, ['circularity','area'], 'and', [0.3,3.1], [1,50])</l>
+<l>    dev_display (Image)</l>
+<l>    dev_display (SelectedRegions1)</l>
+<l>    disp_message (WindowHandle, '基于颜色的边缘分割', 'window', 20, 20, 'red', 'true')</l>
+<l>    stop()</l>
+<c>    </c>
+<c>    *方法三：基于轮廓的边缘分割</c>
+<l>    edges_sub_pix (ImageMedian, Edges2, 'canny', 0.5, 10, 20)</l>
+<l>    union_adjacent_contours_xld (Edges2, UnionContours, 10, 1, 'attr_keep')</l>
+<l>    segment_contours_xld (UnionContours, ContoursSplit1, 'lines_circles', 5, 10, 8)</l>
+<l>    count_obj (ContoursSplit1, Number1)</l>
+<l>    dev_set_line_width (1)</l>
+<l>    dev_display(Image)</l>
+<l>    dev_display (ContoursSplit1)</l>
+<l>    disp_message (WindowHandle, '基于轮廓的边缘分割', 'window', 20, 20, 'red', 'true')</l>
+<l>    stop()</l>
+<c>    </c>
+<l>    for i:=1 to Number1 by 1</l>
+<l>        select_obj (ContoursSplit1, ObjectSelected2, i)</l>
+<l>        get_contour_global_attrib_xld (ObjectSelected2, 'cont_approx', Attrib1)</l>
+<c>        *Attrib1=0为椭圆 ，Attrib1=1为圆</c>
+<l>        if(Attrib1&gt;-1)</l>
+<l>            fit_ellipse_contour_xld (ObjectSelected2, 'fitzgibbon', -1, 0, 0, 200, 3, 2, Row2, Column2, Phi, Radius1, Radius2, StartPhi1, EndPhi1, PointOrder1)</l>
+<c>        *若轮廓长轴为2-6之间则判断为孔洞   </c>
+<l>        if(Radius1&lt;6 and Radius1&gt;2)</l>
+<l>            gen_cross_contour_xld (Cross, Row2, Column2, 10, 0)</l>
+<l>            *dev_display (Cross)</l>
+<l>        endif</l>
+<l>        endif</l>
+<l>    endfor</l>
+<c>    </c>
+<l> endif</l>
+<l> stop()</l>
+<l>endfor</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

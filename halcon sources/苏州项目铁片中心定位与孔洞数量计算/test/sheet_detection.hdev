@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>*dev_update_window ('off')</l>
+<c></c>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/Cap_RuiShi/5.jpeg')</l>
+<l>get_image_size (Image, Width, Height)</l>
+<l>dev_open_window (0, 0, Width, Height, 'black', WindowHandle)</l>
+<l>dev_display (Image)</l>
+<c></c>
+<l>median_image (Image, ImageMedian, 'circle', 1, 'mirrored')</l>
+<c></c>
+<c>*module 1:铁片中心的定位</c>
+<c>*方法1：用阈值分割出铁片</c>
+<c></c>
+<c>*计算图像的直方图</c>
+<l>gray_histo(ImageMedian, ImageMedian, AbsoluteHisto, RelativeHisto)</l>
+<l>histo_to_thresh (RelativeHisto, 0.5, MinThresh, MaxThresh)</l>
+<l>threshold (ImageMedian, Region, MaxThresh[8], 255)</l>
+<l>opening_circle (Region, RegionOpening, 15)</l>
+<l>closing_circle (RegionOpening, RegionClosing, 35)</l>
+<l>fill_up (RegionClosing, RegionFillUp)</l>
+<c></c>
+<l>connection (RegionFillUp, ConnectedRegions)</l>
+<l>select_shape (ConnectedRegions, SelectedRegions, ['area','circularity'], 'and', [30000,0.7], [50000,1])</l>
+<l>fill_up (SelectedRegions, RegionFillUp1)</l>
+<l>dev_display (RegionFillUp)</l>
+<c></c>
+<l>gen_contour_region_xld (RegionFillUp, Contours, 'border')</l>
+<l>boundary (RegionFillUp, RegionBorder, 'inner')</l>
+<c></c>
+<l>closing_circle (RegionFillUp1, RegionClosing1, 20)</l>
+<l>opening_circle (RegionClosing1, RegionOpening1, 15)</l>
+<l>boundary (RegionOpening1, RegionBorder, 'inner')</l>
+<l>*dev_display (Image)</l>
+<l>dev_clear_window ()</l>
+<l>dev_display (RegionOpening)</l>
+<c></c>
+<l>area_center (RegionOpening, Area, Row1, Column1)</l>
+<l>gen_cross_contour_xld (Cross1, Row1, Column1, 20, 0.785398)</l>
+<c></c>
+<l>fit_circle_contour_xld (Contours, 'algebraic', -1, 0, 0, 3, 2, Row, Column, Radius, StartPhi, EndPhi, PointOrder)</l>
+<l>gen_circle_contour_xld (ContCircle, Row, Column, Radius, 0, 6.28318, 'positive', 1)</l>
+<l>gen_cross_contour_xld (Cross, Row, Column, 20, 0.785398)</l>
+<l>dev_set_line_width (5)</l>
+<l>dev_display (Image)</l>
+<l>dev_display (ContCircle)</l>
+<l>dev_set_color ('yellow')</l>
+<l>dev_display (Cross)</l>
+<l>dev_set_color ('blue')</l>
+<l>dev_display (Cross1)</l>
+<c></c>
+<c></c>
+<c>*霍夫变换拟合圆，检测圆心</c>
+<l>hough_circles (RegionBorder, RegionOut, 118, 60, 0)</l>
+<l>hough_circle_trans (RegionBorder, HoughImage, 118)</l>
+<c></c>
+<c>*方法2：边缘检测算法分割铁片边缘</c>
+<l>threshold (ImageMedian, Region1, 50, 255)</l>
+<l>* dev_display (Image)</l>
+<l>*dev_display (Region1)</l>
+<l>edges_image (ImageMedian, ImaAmp1, ImaDir, 'canny', 1, 'nms', 20, 40)</l>
+<l>edges_image (ImageMedian, ImaAmp2, ImaDir, 'canny', 1, 'nms', 50, 100)</l>
+<c></c>
+<l>* dev_clear_window ()</l>
+<l>* dev_display (ImaAmp2)</l>
+<c></c>
+<l>* threshold (ImaAmp, Region2, 1, 255)</l>
+<l>* dev_display (Region2)</l>
+<l>* skeleton (Region2, Skeleton)</l>
+<l>* gen_contours_skeleton_xld (Skeleton, Contours1, 1, 'filter')</l>
+<l>* dev_set_colored (12)</l>
+<l>* dev_display (Contours1)</l>
+<c></c>
+<c></c>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/magnet(梯形圆弧铁片)/1.bmp')</l>
+<l>get_image_size (Image, Width, Height)</l>
+<l>dev_open_window (0, 0, Width, Height, 'black', WindowHandle)</l>
+<c></c>
+<c></c>
+<l>for pictrue_count:=1 to 28 by 1</l>
+<l>    read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/magnet(梯形圆弧铁片)/'+pictrue_count)</l>
+<l>    rgb1_to_gray (Image, GrayImage)</l>
+<c></c>
+<c></c>
+<l>    rgb1_to_gray (Image, GrayImage)</l>
+<l>    threshold (GrayImage, Region, 200, 255)</l>
+<l>    binary_threshold (GrayImage, Region, 'max_separability', 'light', UsedThreshold)</l>
+<l>    area_center (Region, Area1, Row1, Column1)</l>
+<l>    if(Area1&lt;=25500 and Area1&gt;=24600)</l>
+<l>        dilation_circle (Region, RegionDilation, 3)</l>
+<l>        reduce_domain (GrayImage, RegionDilation, ImageReduced)</l>
+<l>        edges_sub_pix (ImageReduced, Edges, 'canny', 1, 20, 40)</l>
+<l>        segment_contours_xld (Edges, ContoursSplit, 'lines_circles', 5, 4, 2)</l>
+<c>        </c>
+<c>        *如果只按轮廓形状特征分出圆弧和直边比较困难，它们的特征参数都很接近。</c>
+<c>        *所以最后采用了基于形状的模板匹配和测量工具的配合，完成识别。</c>
+<c>        </c>
+<c>        *选出圆弧边</c>
+<l>        *select_shape_xld (ContoursSplit, SelectedXLDC, ['anisometry','contlength'], 'and', [60,100], [300,200])</l>
+<l>        select_shape_xld (ContoursSplit, SelectedXLDC, ['ratio','contlength'], 'and', [1, 100], [5, 200])</l>
+<l>        fit_circle_contour_xld (SelectedXLDC, 'algebraic', -1, 0, 0, 3, 2, Row, Column, Radius, \
+                                StartPhi, EndPhi, PointOrder)</l>
+<l>        gen_circle_contour_xld (ContCircle, Row, Column, Radius, 0, 6.28318, 'positive', 1)</l>
+<l>        stop()</l>
+<c>                </c>
+<c>        *计算出中间圆环</c>
+<l>        tuple_mean (Radius, Radius_Mean)</l>
+<l>        tuple_mean (Row, Row_Mean)</l>
+<l>        tuple_mean (Column, Column_Mean)</l>
+<l>        gen_circle_contour_xld (ContCircle3, Row_Mean, Column_Mean, Radius_Mean, 0, 6.28318, 'positive', 1)</l>
+<c>        </c>
+<c>        *选出直边并拟合</c>
+<l>        select_shape_xld (ContoursSplit, SelectedXLDL1, 'ratio', 'and', 0, 1)</l>
+<l>        union_collinear_contours_xld (SelectedXLDL1, UnionContoursL, 10, 1, 2, 0.1, 'attr_keep')</l>
+<l>        select_shape_xld (UnionContoursL, SelectedXLDL2, 'contlength', 'and', 100, 99999)</l>
+<l>        fit_line_contour_xld (SelectedXLDL2, 'tukey', -1, 0, 5, 2, RowBegin, ColBegin, RowEnd, ColEnd,\
+                              Nr, Nc, Dist)</l>
+<l>        dev_clear_window ()</l>
+<l>        gen_contour_polygon_xld (ContourL1, [RowBegin[0],RowEnd[0]], [ColBegin[0],ColEnd[0]])</l>
+<l>        gen_contour_polygon_xld (ContourL2, [RowBegin[1],RowEnd[1]], [ColBegin[1],ColEnd[1]])</l>
+<c>        </c>
+<c>        *得出两直边的中间直边</c>
+<l>        intersection_lines (RowBegin[0],ColBegin[0], RowEnd[0],ColEnd[0],\
+                            RowBegin[1],ColBegin[1], RowEnd[1],ColEnd[1], Row_I, Column_I, IsOverlapping)</l>
+<l>        line_orientation (RowBegin, ColBegin, RowEnd, ColEnd, PhiL)</l>
+<l>        tuple_mean (PhiL, PhiL_Mean)</l>
+<l>        Line_center := [Row_I,Column_I,Row_I + Radius[0]*sin(PhiL_Mean),Column_I - Radius[0]*cos(PhiL_Mean)]</l>
+<l>        gen_contour_polygon_xld (ContourL_center, [Line_center[0],Line_center[2]], [Line_center[1],Line_center[3]])</l>
+<c>        </c>
+<l>        intersection_line_circle (Row_I, Column_I, Row_I + Radius[0]*sin(PhiL_Mean),Column_I - Radius[0]*cos(PhiL_Mean), \
+                                  Row_Mean, Column_Mean, Radius_Mean, StartPhi[0], EndPhi[0], 'negative', \
+                                  Row_Cross, Column_Cross)</l>
+<l>        gen_cross_contour_xld (Cross1, Row_Cross, Column_Cross, 20, 0)</l>
+<c>        </c>
+<c>        </c>
+<l>        dev_clear_window ()</l>
+<l>        dev_display (GrayImage)</l>
+<l>        dev_set_color ('green')</l>
+<l>        dev_display (ContourL1)</l>
+<l>        dev_display (ContourL2)</l>
+<l>        dev_display (ContCircle)</l>
+<l>        dev_set_color ('yellow')</l>
+<l>        dev_display (ContourL_center)</l>
+<l>        dev_display (ContCircle3)</l>
+<c>        </c>
+<l>        dev_set_color ('red')</l>
+<l>        dev_display (Cross1)</l>
+<c>        </c>
+<c>        </c>
+<l>        set_display_font (WindowHandle, 16, 'mono', 'true', 'false')</l>
+<l>        disp_message (WindowHandle, 'X:'+Row_Cross, 'window', 40, 20, 'green', 'false')</l>
+<l>        disp_message (WindowHandle, 'Y:'+Column_Cross, 'window', 60, 20, 'green', 'false')</l>
+<l>        ANGLE := deg(PhiL_Mean)</l>
+<l>        disp_message (WindowHandle, 'ANGLE:' + ANGLE$'3.2f' + '°', 'window', 80, 20, 'green', 'false')</l>
+<l>        dump_window_image (Image1, WindowHandle)</l>
+<l>    endif</l>
+<l>    stop()</l>
+<l>endfor</l>
+<c></c>
+<l>for pictrue_count:=1 to 28 by 1</l>
+<l>    read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/magnet(梯形圆弧铁片)/'+pictrue_count)</l>
+<l>    rgb1_to_gray (Image, GrayImage)</l>
+<l>    binary_threshold (GrayImage, Region, 'max_separability', 'light', UsedThreshold)</l>
+<l>    area_center (Region, Area, Row2, Column2)</l>
+<l>    stop()</l>
+<l>endfor</l>
+<c></c>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

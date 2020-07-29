@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.1" halcon_version="17.12">
+<procedure name="main">
+<interface/>
+<body>
+<l>dev_close_window ()</l>
+<l>read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/magnet(梯形圆弧铁片)/1.bmp')</l>
+<l>get_image_size (Image, Width, Height)</l>
+<l>dev_open_window (0, 0, Width, Height, 'black', WindowHandle)</l>
+<l>pi := 3.1415926535</l>
+<c></c>
+<l>rgb1_to_gray (Image, GrayImage)</l>
+<l>threshold (GrayImage, Region, 200, 255)</l>
+<l>dilation_circle (Region, RegionDilation, 3)</l>
+<l>reduce_domain (GrayImage, RegionDilation, ImageReduced)</l>
+<l>edges_sub_pix (ImageReduced, Edges, 'canny', 1, 20, 40)</l>
+<l>segment_contours_xld (Edges, ContoursSplit, 'lines_circles', 5, 4, 2)</l>
+<c>*选出圆弧边</c>
+<l>select_shape_xld (ContoursSplit, SelectedXLDC, 'ratio', 'and', 1, 5)</l>
+<l>fit_circle_contour_xld (SelectedXLDC, 'algebraic', -1, 0, 0, 3, 2, Row, Column, Radius, \
+                        StartPhi, EndPhi, PointOrder)</l>
+<l>gen_circle_contour_xld (ContCircle, Row, Column, Radius, 0, 6.28318, 'positive', 1)</l>
+<l>* stop()</l>
+<c></c>
+<c>*测量模型工具</c>
+<l>CircleParam1 := [Row[0], Column[0], Radius[0]]</l>
+<l>CircleParam2 := [Row[1], Column[1], Radius[1]]</l>
+<c></c>
+<l>LineParam1 :=[104.01, 386.992, 142.615, 255.63]</l>
+<l>LineParam2 :=[240.302, 442.833, 300.865, 316.414]</l>
+<c></c>
+<l>create_metrology_model (MetrologyHandle)</l>
+<l>set_metrology_model_image_size (MetrologyHandle, Width, Height)</l>
+<l>add_metrology_object_generic (MetrologyHandle, 'circle', CircleParam1, 20, 5, 1, 30, \
+                              ['start_phi','end_phi', 'point_order'], \
+                              [StartPhi[0], EndPhi[0],'negative'], CircleIndices1)</l>
+<l>add_metrology_object_generic (MetrologyHandle, 'circle', CircleParam2, 20, 5, 1, 30, \
+                              ['start_phi','end_phi', 'point_order'], \
+                              [StartPhi[1], EndPhi[1],'positive'], CircleIndices2)</l>
+<c></c>
+<l>add_metrology_object_generic (MetrologyHandle, 'line', LineParam1, 20, 5, 1, 30, \
+                              [], [], LineIndex1)</l>
+<l>add_metrology_object_generic (MetrologyHandle, 'line', LineParam2, 20, 5, 1, 30, \
+                              [], [], LineIndex2)</l>
+<c></c>
+<l>apply_metrology_model (ImageReduced, MetrologyHandle)</l>
+<l>* get_metrology_object_model_contour (ModelContour, MetrologyHandle, 'all', 1.5)</l>
+<l>get_metrology_object_measures (MeasureContour, MetrologyHandle, \
+                               [CircleIndices1,CircleIndices2,LineIndex1,LineIndex2], \
+                               'all', Row1, Column1)</l>
+<l>gen_cross_contour_xld (Cross, Row1, Column1, 10, 0)</l>
+<c></c>
+<l>get_metrology_object_result (MetrologyHandle, \
+                             [CircleIndices1,CircleIndices2,LineIndex1,LineIndex2],\
+                             'all', 'result_type', 'all_param', Parameter)</l>
+<l>get_metrology_object_result_contour (ResultContour, MetrologyHandle, \
+                                     [CircleIndices1,CircleIndices2,LineIndex1,LineIndex2], \
+                                     'all', 1)</l>
+<l>gen_circle_contour_xld (ContCircle1, Parameter[0], Parameter[1], Parameter[2], 0, 6.28318, 'positive', 1)</l>
+<l>gen_circle_contour_xld (ContCircle2, Parameter[3], Parameter[4], Parameter[5], 0, 6.28318, 'positive', 1)</l>
+<l>dev_clear_window ()</l>
+<l>dev_display (GrayImage)</l>
+<l>dev_display (MeasureContour)</l>
+<l>dev_set_line_width (2)</l>
+<l>dev_display (Cross)</l>
+<l>dev_display (ContCircle1)</l>
+<l>* dev_display (ContCircle2)</l>
+<l>dev_display (ResultContour)</l>
+<l>* stop()</l>
+<c></c>
+<c>*计算出中间圆环</c>
+<l>tuple_mean (Radius, Radius_Mean)</l>
+<l>tuple_mean (Row, Row_Mean)</l>
+<l>tuple_mean (Column, Column_Mean)</l>
+<l>gen_circle_contour_xld (ContCircle3, Row_Mean, Column_Mean, Radius_Mean, 0, 6.28318, 'positive', 1)</l>
+<c></c>
+<c>*选出直边并拟合</c>
+<l>select_shape_xld (ContoursSplit, SelectedXLDL1, 'ratio', 'and', 0, 1)</l>
+<l>union_collinear_contours_xld (SelectedXLDL1, UnionContoursL, 10, 1, 2, 0.1, 'attr_keep')</l>
+<l>select_shape_xld (UnionContoursL, SelectedXLDL2, 'contlength', 'and', 100, 99999)</l>
+<l>fit_line_contour_xld (SelectedXLDL2, 'tukey', -1, 0, 5, 2, RowBegin, ColBegin, RowEnd, ColEnd,\
+                      Nr, Nc, Dist)</l>
+<l>dev_clear_window ()</l>
+<l>gen_contour_polygon_xld (ContourL1, [RowBegin[0],RowEnd[0]], [ColBegin[0],ColEnd[0]])</l>
+<l>gen_contour_polygon_xld (ContourL2, [RowBegin[1],RowEnd[1]], [ColBegin[1],ColEnd[1]])</l>
+<c></c>
+<c>*得出两直边的中间直边</c>
+<l>intersection_lines (RowBegin[0],ColBegin[0], RowEnd[0],ColEnd[0],\
+                    RowBegin[1],ColBegin[1], RowEnd[1],ColEnd[1], Row_I, Column_I, IsOverlapping)</l>
+<l>line_orientation (RowBegin, ColBegin, RowEnd, ColEnd, PhiL)</l>
+<l>tuple_mean (PhiL, PhiL_Mean)</l>
+<l>Line_center := [Row_I,Column_I,Row_I + Radius[0]*sin(PhiL_Mean),Column_I - Radius[0]*cos(PhiL_Mean)]</l>
+<l>gen_contour_polygon_xld (ContourL_center, [Line_center[0],Line_center[2]], [Line_center[1],Line_center[3]])</l>
+<c></c>
+<l>intersection_line_circle (Row_I, Column_I, Row_I + Radius[0]*sin(PhiL_Mean),Column_I - Radius[0]*cos(PhiL_Mean), \
+                          Row_Mean, Column_Mean, Radius_Mean, StartPhi[0], EndPhi[0], 'negative', \
+                          Row_Cross, Column_Cross)</l>
+<l>gen_cross_contour_xld (Cross1, Row_Cross, Column_Cross, 20, 0)</l>
+<c></c>
+<c></c>
+<l>dev_clear_window ()</l>
+<l>dev_display (GrayImage)</l>
+<l>dev_set_color ('green')</l>
+<l>dev_display (ContourL1)</l>
+<l>dev_display (ContourL2)</l>
+<l>dev_display (ContCircle)</l>
+<l>dev_set_color ('yellow')</l>
+<l>dev_display (ContourL_center)</l>
+<l>dev_display (ContCircle3)</l>
+<c></c>
+<l>dev_set_color ('red')</l>
+<l>dev_display (Cross1)</l>
+<c></c>
+<c></c>
+<l>set_display_font (WindowHandle, 16, 'mono', 'true', 'false')</l>
+<l>disp_message (WindowHandle, 'X:'+Row_Cross, 'window', 40, 20, 'green', 'false')</l>
+<l>disp_message (WindowHandle, 'Y:'+Column_Cross, 'window', 60, 20, 'green', 'false')</l>
+<l>ANGLE := deg(PhiL_Mean)</l>
+<l>disp_message (WindowHandle, 'ANGLE:' + ANGLE$'3.2f' + '°', 'window', 80, 20, 'green', 'false')</l>
+<l>dump_window_image (Image1, WindowHandle)</l>
+<c></c>
+<l>stop()</l>
+<c>    </c>
+<c>*模板匹配</c>
+<c>*创建模板</c>
+<l>reduce_domain (GrayImage, Region, Image_Model_Reduce)</l>
+<l>gen_image_const (BlackImage, 'byte', Width, Height)</l>
+<l>add_image (BlackImage, Image_Model_Reduce, ImageResult, 1, 0)</l>
+<l>gen_rectangle1 (ROI_0, 81.5, 205, 332.5, 477)</l>
+<l>reduce_domain (ImageResult, ROI_0, Image_Model)</l>
+<c></c>
+<l>* inspect_shape_model (Image_Model, ModelImages, ModelRegions, 4, 20)</l>
+<l>create_shape_model (Image_Model, 'auto', 0, rad(360), 'auto', 'auto', 'use_polarity', 'auto', 'auto', ModelID)</l>
+<c>*搜索第一幅图的模板</c>
+<l>find_shape_model (Image_Model, ModelID, 0, rad(360), 0.5, 1, 0.9, 'least_squares', 0, 0.9, \
+                  Row_0, Column_0, Angle_0, Score_0)</l>
+<c></c>
+<l>* create_ncc_model (Image_Model, 0, 0, rad(360), 'auto', 'use_polarity', ModelID)</l>
+<c>*搜索第一幅图的模板</c>
+<l>* find_ncc_model (GrayImage, ModelID, 0, rad(360), 0.8, 1, 0.5, 'true', 0, Row_0, Column_0, Angle_0, Score_0)</l>
+<l>* stop()</l>
+<c></c>
+<c></c>
+<l>for pictrue_count:=18 to 28 by 1</l>
+<l>    dev_clear_window ()</l>
+<l>    read_image (Image, 'C:/Users/acer/Desktop/halcon_project/images/magnet(梯形圆弧铁片)/'+pictrue_count)</l>
+<l>    rgb1_to_gray (Image, GrayImage)</l>
+<l>    dev_display (GrayImage)</l>
+<c>    </c>
+<l>    count_seconds (Seconds1)</l>
+<c>    </c>
+<l>    binary_threshold (GrayImage, Region, 'max_separability', 'light', UsedThreshold)</l>
+<l>    area_center (Region, Area1, Row1, Column1)</l>
+<l>    if(Area1&lt;=25500 and Area1&gt;=24600)</l>
+<l>        dilation_circle (Region, ROI, 10)</l>
+<l>*         gen_rectangle1 (ROI, 15, 27, 467, 621)</l>
+<l>        reduce_domain (GrayImage, ROI, ImageSearch)</l>
+<c>        *当前图像搜索模板</c>
+<l>        find_shape_model (ImageSearch, ModelID, 0, rad(360), 0.5, 1, 0.9, 'least_squares', 0, 0.9,\
+                          Row_Search, Column_Search, Angle_Search, Score)</l>
+<c>        </c>
+<l>*         find_ncc_model (ImageSearch, ModelID, 0, rad(360), 0.8, 1, 0.5, 'true', 0, \
+                        Row_Search, Column_Search, Angle_Search, Score)</l>
+<l>        if(Score &gt;= 0.8)</l>
+<c>            *和模板图（第一幅图）进行仿射变换</c>
+<l>            vector_angle_to_rigid (Row_0, Column_0, Angle_0, Row_Search, Column_Search, Angle_Search, HomMat2D)</l>
+<l>*             affine_trans_contour_xld (Edges, ContoursAffineTrans, HomMat2D)</l>
+<l>            CircleParam1 := [Row[0], Column[0], Radius[0]]</l>
+<l>            CircleParam2 := [Row[1], Column[1], Radius[1]]</l>
+<l>            LineParam1 := [104.01, 386.992, 142.615, 255.63]</l>
+<l>            LineParam2 := [240.302, 442.833, 300.865, 316.414]</l>
+<c>            </c>
+<l>            L1_Row := [104.01, 142.615]</l>
+<l>            L1_Column := [386.992, 255.63]</l>
+<l>            L2_Row := [240.302, 300.865]</l>
+<l>            L2_Column := [442.833, 316.414]</l>
+<c>            </c>
+<l>            affine_trans_point_2d (HomMat2D, Row, Column, CircleRow, CircleColumn)</l>
+<l>            affine_trans_point_2d (HomMat2D, L1_Row, L1_Column, Line1Row, Line1Column)</l>
+<l>            affine_trans_point_2d (HomMat2D, L2_Row, L2_Column, Line2Row, Line2Column)</l>
+<c>            </c>
+<l>            CircleParam1_new := [CircleRow[0], CircleColumn[0], Radius[0]]</l>
+<l>            CircleParam2_new := [CircleRow[1], CircleColumn[1], Radius[1]]</l>
+<l>            LineParam1_new := [Line1Row[0], Line1Column[0], Line1Row[1], Line1Column[1]]</l>
+<l>            LineParam2_new := [Line2Row[0], Line2Column[0], Line2Row[1], Line2Column[1]]</l>
+<c>            </c>
+<c>            </c>
+<l>            StartPhi_new := StartPhi + Angle_Search</l>
+<l>            EndPhi_new := EndPhi + Angle_Search</l>
+<l>            add_metrology_object_generic (MetrologyHandle, 'circle', CircleParam1_new, 20, 5, 1, 30, \
+                                          ['start_phi','end_phi', 'point_order'], \
+                                          [StartPhi_new[0], EndPhi_new[0],'negative'], CircleIndices1)</l>
+<l>            add_metrology_object_generic (MetrologyHandle, 'circle', CircleParam2_new, 20, 5, 1, 30, \
+                                          ['start_phi','end_phi', 'point_order'], \
+                                          [StartPhi_new[1], EndPhi_new[1],'positive'], CircleIndices2)</l>
+<c>            </c>
+<l>            add_metrology_object_generic (MetrologyHandle, 'line', LineParam1_new, 20, 5, 1, 30, \
+                                      [], [], LineIndex1)</l>
+<l>            add_metrology_object_generic (MetrologyHandle, 'line', LineParam2_new, 20, 5, 1, 30, \
+                                      [], [], LineIndex2)</l>
+<c>            </c>
+<l>            apply_metrology_model (GrayImage, MetrologyHandle)</l>
+<l>*             get_metrology_object_model_contour (ModelContour, MetrologyHandle, 'all', 1.5)</l>
+<c>            *注意测量工具索引在循环中会增加</c>
+<l>            get_metrology_object_measures (MeasureContour, MetrologyHandle,\
+                                           [CircleIndices1,CircleIndices2,LineIndex1,LineIndex2],\
+                                           'all', Row1, Column1)</l>
+<l>            gen_cross_contour_xld (Cross, Row1, Column1, 10, 0)</l>
+<c>            </c>
+<l>            get_metrology_object_result (MetrologyHandle, \
+                                         [CircleIndices1,CircleIndices2,LineIndex1,LineIndex2], \
+                                         'all', 'result_type', 'all_param', Parameter)</l>
+<l>            get_metrology_object_result_contour (ResultContour, MetrologyHandle, \
+                                                 [CircleIndices1,CircleIndices2,LineIndex1,LineIndex2], \
+                                                 'all', 1)</l>
+<l>             gen_circle_contour_xld (ContCircle1, Parameter[0], Parameter[1], Parameter[2], 0, 6.28318, 'positive', 1)</l>
+<l>*             gen_circle_contour_xld (ContCircle2, Parameter[3], Parameter[4], Parameter[5], 0, 6.28318, 'positive', 1)</l>
+<c>             </c>
+<l>            dev_clear_window ()</l>
+<l>            dev_display (GrayImage)</l>
+<l>            dev_display (MeasureContour)</l>
+<l>            dev_set_line_width (2)</l>
+<l>            dev_display (Cross)</l>
+<l>             dev_display (ContCircle1)</l>
+<l>*             dev_display (ContCircle2)</l>
+<l>            dev_display (ResultContour)</l>
+<l>            *stop()</l>
+<c>            *测量结果Parameter一共十四个参数</c>
+<c>            *分别包含两个圆形（ Parameter[0~5] ）和两条直边（ Parameter[6~13] ）的参数</c>
+<l>*             CircleParam1_result := [Parameter[0], Parameter[1], Parameter[2]]</l>
+<l>*             CircleParam2_result := [Parameter[3], Parameter[4], Parameter[5]]</l>
+<l>*             LineParam1_result := [Parameter[6], Parameter[7], Parameter[8],Parameter[9]]</l>
+<l>*             LineParam2_result := [Parameter[10], Parameter[11], Parameter[12],Parameter[13]]</l>
+<c>            </c>
+<l>*             LineParam1_Row_result := [Parameter[6], Parameter[8]]</l>
+<l>*             LineParam1_Column_result := [Parameter[7], Parameter[9]]</l>
+<l>*             LineParam2_Row_result := [Parameter[10], Parameter[12]]</l>
+<l>*             LineParam2_Column_result := [Parameter[11], Parameter[13]]</l>
+<c>            </c>
+<c>            *计算出中间圆环</c>
+<l>            tuple_mean ([Parameter[2], Parameter[5]], Radius_Mean)</l>
+<l>            tuple_mean ([Parameter[0], Parameter[3]], Row_Mean)</l>
+<l>            tuple_mean ([Parameter[1], Parameter[4]], Column_Mean)</l>
+<l>            gen_circle_contour_xld (ContCircle3, Row_Mean, Column_Mean, Radius_Mean, 0, 6.28318, 'positive', 1)</l>
+<c>            </c>
+<c>            *得出两直边的中间直边</c>
+<l>            intersection_lines (Parameter[6], Parameter[7], Parameter[8],Parameter[9],\
+                                Parameter[10], Parameter[11], Parameter[12],Parameter[13], \
+                                Row_I, Column_I, IsOverlapping)</l>
+<l>            line_orientation ([Parameter[6], Parameter[10]], [Parameter[7], Parameter[11]], \
+                              [Parameter[8], Parameter[12]], [Parameter[9], Parameter[13]], PhiL)</l>
+<l>            tuple_mean (PhiL, PhiL_Mean)</l>
+<l>            tuple_max ( [Parameter[2],Parameter[5]], Radius_Max )</l>
+<l>            Line_center := [Row_I- Radius_Max*sin(PhiL_Mean), Column_I + Radius_Max*cos(PhiL_Mean),\
+                            Row_I + Radius_Max*sin(PhiL_Mean), Column_I - Radius_Max*cos(PhiL_Mean)]</l>
+<l>            gen_contour_polygon_xld (ContourL_center, [Line_center[0],Line_center[2]], [Line_center[1],Line_center[3]])</l>
+<c>            </c>
+<c>            *得到物料中心</c>
+<l>            intersection_line_circle (Row_I, Column_I, Row_I + Radius_Max*sin(PhiL_Mean),Column_I - Radius_Max*cos(PhiL_Mean), \
+                                      Row_Mean, Column_Mean, Radius_Mean, StartPhi_new[0], EndPhi_new[0], 'negative', \
+                                      Row_Cross, Column_Cross)</l>
+<l>            gen_cross_contour_xld (Cross1, Row_Cross, Column_Cross, 20, 0)</l>
+<c>            </c>
+<c>            *求出物料中心指向两直线交点的角度，即物料角度。</c>
+<l>            tan_Angle := - (Row_I - Row_Cross) / (Column_I - Column_Cross)</l>
+<l>            if( Column_I &gt;= Column_Cross )</l>
+<l>                tuple_atan (tan_Angle, ATan)</l>
+<l>                Angle := ATan</l>
+<l>            else</l>
+<l>                tuple_atan (tan_Angle, ATan)</l>
+<l>                Angle := ATan + pi</l>
+<l>            endif</l>
+<c>            </c>
+<l>            count_seconds (Seconds2)</l>
+<l>            Time := round( (Seconds2 - Seconds1)*1000 )</l>
+<c>            </c>
+<l>            gen_arrow_contour_xld (Arrow, Row_Cross, Column_Cross, \
+                                   Row_Cross - 50*sin(Angle), Column_Cross + 50*cos(Angle), 5, 5)</l>
+<l>            dev_clear_window ()</l>
+<l>            dev_display (GrayImage)</l>
+<l>            dev_set_color ('green')</l>
+<l>            dev_display (ResultContour)</l>
+<l>            dev_display (ContCircle1)</l>
+<l>            dev_set_color ('yellow')</l>
+<l>            dev_display (ContourL_center)</l>
+<l>            dev_display (ContCircle3)</l>
+<c>            </c>
+<l>            dev_set_color ('red')</l>
+<l>            dev_display (Cross1)</l>
+<l>            dev_set_color ('blue')</l>
+<l>            dev_display (Arrow)</l>
+<c>            </c>
+<c>            </c>
+<l>            disp_message (WindowHandle, 'X:'+Row_Cross, 'window', 40, 20, 'green', 'false')</l>
+<l>            disp_message (WindowHandle, 'Y:'+Column_Cross, 'window', 60, 20, 'green', 'false')</l>
+<l>            ANGLE := deg(Angle)</l>
+<l>            disp_message (WindowHandle, 'ANGLE:' + ANGLE$'3.2f' + '°', 'window', 80, 20, 'green', 'false')</l>
+<l>            disp_message (WindowHandle, 'OK', 'window', 40, 500, 'green', 'false')</l>
+<l>            disp_message (WindowHandle, 'RunTime:'+Time+'ms', 'window', 60, 500, 'green', 'false')</l>
+<c></c>
+<l>            dump_window_image (Image1, WindowHandle)</l>
+<l>            dev_display (Image1)</l>
+<l>        endif</l>
+<l>    else</l>
+<l>        dev_clear_window ()</l>
+<l>        dev_display (GrayImage)</l>
+<l>        disp_message (WindowHandle, 'NG', 'window', 40, 600, 'red', 'false')</l>
+<l>    endif</l>
+<l>    disp_message (WindowHandle, 'Picture Name: '+pictrue_count+'.bmp', 'window', 10, 20, 'black', 'true')</l>
+<l>    stop()</l>
+<l>endfor</l>
+<c></c>
+<l>clear_metrology_model (MetrologyHandle)</l>
+<l>clear_shape_model (ModelID)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>
